@@ -29,6 +29,7 @@
 #include "DebugDraw.h"
 #include "RecastDebugDraw.h"
 #include "DetourNavMesh.h"
+#include "Sample.h"
 
 static bool intersectSegmentTriangle(const float* sp, const float* sq,
 									 const float* a, const float* b, const float* c,
@@ -166,10 +167,26 @@ bool InputGeom::loadGeomSet(rcContext* ctx, const std::string& filepath)
 	char* buf = 0;
 	FILE* fp = fopen(filepath.c_str(), "rb");
 	if (!fp)
+	{
 		return false;
-	fseek(fp, 0, SEEK_END);
-	int bufSize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+	}
+	if (fseek(fp, 0, SEEK_END) != 0)
+	{
+		fclose(fp);
+		return false;
+	}
+
+	long bufSize = ftell(fp);
+	if (bufSize < 0)
+	{
+		fclose(fp);
+		return false;
+	}
+	if (fseek(fp, 0, SEEK_SET) != 0)
+	{
+		fclose(fp);
+		return false;
+	}
 	buf = new char[bufSize];
 	if (!buf)
 	{
@@ -539,7 +556,7 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
-		unsigned int col = duIntToCol(vol->area, 32);
+		unsigned int col = duTransCol(dd->areaToCol(vol->area), 32);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
 		{
 			const float* va = &vol->verts[k*3];
@@ -565,7 +582,7 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
-		unsigned int col = duIntToCol(vol->area, 220);
+		unsigned int col = duTransCol(dd->areaToCol(vol->area), 220);
 		for (int j = 0, k = vol->nverts-1; j < vol->nverts; k = j++)
 		{
 			const float* va = &vol->verts[k*3];
@@ -584,7 +601,7 @@ void InputGeom::drawConvexVolumes(struct duDebugDraw* dd, bool /*hilight*/)
 	for (int i = 0; i < m_volumeCount; ++i)
 	{
 		const ConvexVolume* vol = &m_volumes[i];
-		unsigned int col = duDarkenCol(duIntToCol(vol->area, 255));
+		unsigned int col = duDarkenCol(duTransCol(dd->areaToCol(vol->area), 220));
 		for (int j = 0; j < vol->nverts; ++j)
 		{
 			dd->vertex(vol->verts[j*3+0],vol->verts[j*3+1]+0.1f,vol->verts[j*3+2], col);
